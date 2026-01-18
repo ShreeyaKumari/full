@@ -1,0 +1,123 @@
+search on catalog data collection
+
+Prelims which is needed before running the programs:
+
+$mongosh
+## Step 1: Prepare Your Data Collection
+First, you need a collection with text-rich fields to search. We'll use a catalog
+collection for this example. The key is to have fields like name and description
+that contain the words you want to find.
+Action: In mongosh, connect to your database and run the following command
+to insert sample data.
+db.catalog.insertMany([
+{
+item_id: "A001",
+name: "Classic Leather Backpack",
+description: "Durable leather backpack with multiple compartments,
+perfect for daily commute or light travel.",
+tags: ["leather", "backpack", "travel", "work"],
+price: 120.00,
+in_stock: true
+},
+{
+item_id: "A002",
+name: "Ergonomic Office Chair",
+description: "Adjustable office chair with lumbar support and breathable
+mesh, ideal for long working hours.",
+tags: ["office", "chair", "ergonomic", "comfort"],
+price: 280.00,
+in_stock: false
+},
+{
+item_id: "A003",
+name: "Durable Cotton T-Shirt",
+description: "A soft and durable t-shirt made from 100% organic cotton.
+Eco-friendly and comfortable.",
+tags: ["cotton", "tshirt", "organic", "eco-friendly"],
+price: 25.00,
+in_stock: true
+}
+]);
+
+## Step 2: Create a text Index
+This is the most critical step for enabling text search on a Community Server.
+You must tell MongoDB which fields to prepare for searching. Without this
+index, the $text operator will not work.
+Why is this needed? A text index acts like an index at the back of a book. It
+lists all the significant words from your specified fields and maps them back to
+the documents they came from. This allows MongoDB to find words very quickly
+without scanning every single document in the collection.
+Important Note: A collection can have at most one text index.
+Action: Run the createIndex command. Here, we are indexing the name,
+description, and tags fields.
+db.catalog.createIndex({
+name: "text", description: "text", tags: "text"
+})
+## Step 3: Build and Execute the Aggregation Pipeline
+Now, you'll construct the query. Instead of the $search stage used in Atlas, you
+will use the $match stage combined with the $text operator.
+Action: Let's build a pipeline to find all items that contain the words "durable"
+or "backpack".
+1. Stage 1: The $match Stage with $text This stage filters the documents.
+▪ $text: The operator that performs the search on the text index.
+▪ $search: The string containing the words you're looking for. By
+default, MongoDB searches for documents that contain any of the
+space-separated words (an OR condition).
+
+{
+$match: {
+$text: {
+$search: "durable backpack"
+}
+}
+}
+Stage 2: The $project Stage This stage refines the output. It's good practice to
+select only the fields you need and to view the search relevance score.
+▪ $meta: "textScore": This special expression retrieves the relevance score
+calculated by the $text search. A higher score means a better match.
+{
+$project: {
+_id: 0,
+name: 1,
+price: 1,
+score: { $meta: "textScore" }
+}
+}
+
+Complete Pipeline Execution: Combine these stages and run the aggregate
+command.
+db.catalog.aggregate([
+// Stage 1: Filter documents using the text index
+{
+$match: {
+$text: {
+$search: "durable backpack"
+}
+}
+},
+// Stage 2: Reshape output and include the relevance score
+{
+$project: {
+_id: 0,
+name: 1,
+price: 1,
+score: { $meta: "textScore" }
+}
+}
+])
+## Step 4: Analyze the Results
+The output will be the documents that matched your search query, formatted
+according to your $project stage.
+Expected Output:
+[
+{
+"name": "Classic Leather Backpack",
+"price": 120,
+"score": 1.5
+},
+{
+"name": "Durable Cotton T-Shirt",
+"price": 25,
+"score": 0.75
+}
+]
