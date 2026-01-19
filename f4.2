@@ -1,0 +1,98 @@
+npx create-react-app program4
+cd program4
+npm start
+
+src/Student.js
+import React, { useState } from "react";
+
+/* Initial Data */
+const initialStudents = [
+  { slno: 1, name: "stud1", usn: "rvce1", tmarks: 150 },
+  { slno: 2, name: "stud2", usn: "rvce2", tmarks: 145 },
+];
+
+/* Row Component (props) */
+function StudentRow({ student }) {
+  return (
+    <tr>
+      <td>{student.slno}</td>
+      <td>{student.name}</td>
+      <td>{student.usn}</td>
+      <td>{student.tmarks}</td>
+    </tr>
+  );
+}
+
+/* Table Component (props) */
+function StudentsTable({ students }) {
+  return (
+    <table border="1" width="60%">
+      <thead>
+        <tr>
+          <th>Sl No</th>
+          <th>Name</th>
+          <th>USN</th>
+          <th>Total Marks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {students.map((s) => (
+          <StudentRow key={s.slno} student={s} />
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/* Main Component (state) */
+export default function StudentList() {
+  const [students, setStudents] = useState(initialStudents);
+  const [form, setForm] = useState({ name: "", usn: "", tmarks: "" });
+
+  const addStudent = () => {
+    setStudents([
+      ...students,
+      { slno: students.length + 1, ...form },
+    ]);
+    setForm({ name: "", usn: "", tmarks: "" });
+  };
+
+  return (
+    <>
+      <h2>Student Registration Portal</h2>
+
+      <StudentsTable students={students} />
+
+      <br />
+
+      <input
+        placeholder="Name"
+        value={form.name}
+        onChange={(e) => setForm({ ...form, name: e.target.value })}
+      />
+      <input
+        placeholder="USN"
+        value={form.usn}
+        onChange={(e) => setForm({ ...form, usn: e.target.value })}
+      />
+      <input
+        placeholder="Total Marks"
+        value={form.tmarks}
+        onChange={(e) => setForm({ ...form, tmarks: e.target.value })}
+      />
+      <button onClick={addStudent}>Add</button>
+    </>
+  );
+}
+
+srs/App.js
+
+import StudentList from "./Student";
+
+function App() {
+  return <StudentList />;
+}
+
+export default App;
+
+
